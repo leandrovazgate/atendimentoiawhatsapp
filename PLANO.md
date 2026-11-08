@@ -58,6 +58,29 @@ Estimativa por atendimento (~10 trocas de mensagem, ~50 mil tokens de entrada so
 
 Com cache de prompt (prompt de sistema e histórico reaproveitados), o custo do Sonnet tende a cair para cerca de metade. Proposta: homologar com **Haiku 5.5** e **Sonnet 5.5** nas mesmas conversas de teste e escolher pelo resultado.
 
+### Múltiplos números de WhatsApp
+
+O agente atende **vários números ao mesmo tempo**, com uma única instalação do serviço.
+
+- **Identificação do número:** cada mensagem recebida da Cloud API traz `metadata.phone_number_id`, que diz qual número recebeu a mensagem. A resposta sai sempre pelo **mesmo número**.
+- **Cadastro de canais:** uma tabela `channels` guarda a configuração de cada número:
+
+  | Campo | Exemplo |
+  |---|---|
+  | `phone_number_id` / número exibido | `1098…` / +55 11 9xxxx-xxxx |
+  | Provedor e credencial | Meta Cloud API, token da conta (WABA) em variável de ambiente/cofre |
+  | Persona e mensagem de boas-vindas | "Gate, assistente da GateIT" |
+  | Departamento/categoria padrão no TomTicket | Suporte N1 |
+  | Cliente fixo (opcional) | número dedicado a um cliente → já sabe a empresa |
+  | Horário de atendimento, plantão e destino do handoff | seg–sex 8h–18h, grupo da equipe |
+  | Ativo/inativo | — |
+
+- **Conversa isolada por número:** a chave da conversa é `(phone_number_id, telefone do cliente)`. Se o mesmo cliente falar com dois números, são duas conversas separadas.
+- **Contas:** vários números podem ficar na mesma conta WhatsApp Business (WABA) da Meta, ou em contas diferentes. O sistema aceita os dois casos.
+- **Provedor plugável:** o canal WhatsApp fica atrás de uma interface (`receber` / `enviar`), então dá para ligar um número via Z-API/Evolution no futuro sem mexer no agente.
+- **Novo número = configuração, não código:** cadastrar o número na Meta, apontar o webhook (único para todos os números) e incluir uma linha em `channels`.
+- **Painel (fase 2):** tela simples para cadastrar/editar números e ver as conversas de cada um.
+
 ## 3. Integração TomTicket (API v2.0)
 
 - Base: `https://api.tomticket.com/v2.0` ⚠️
@@ -157,7 +180,8 @@ Endpoints que vamos usar (nomes ⚠️ a confirmar na documentação da conta):
 ```
 src/
   server.ts              # Fastify: rotas /webhook/whatsapp e /health
-  channels/whatsapp.ts   # receber/enviar mensagens (Cloud API)
+  channels/whatsapp.ts   # receber/enviar mensagens (Cloud API), multi-número
+  channels/registry.ts   # tabela channels: config por número
   agent/
     agent.ts             # loop de conversa com Claude + tool use
     prompt.ts            # persona e regras
@@ -184,7 +208,7 @@ Dockerfile
 
 1. **Token da API TomTicket** (e o link da documentação da sua conta) — para validar os endpoints.
 2. **Provedor de WhatsApp**: Cloud API oficial da Meta (recomendado) ou Z-API/Evolution?
-3. **Número de WhatsApp** a ser usado (novo ou o atual do suporte?).
+3. **Números de WhatsApp**: quantos, e para que serve cada um (por cliente, por marca, por setor?).
 4. **Política de cadastro**: o agente pode cadastrar cliente novo no TomTicket ou só atender quem já existe?
 5. **Departamento/categorias** padrão para os chamados abertos pelo agente.
 6. **Horário de atendimento**, SLA por prioridade e como avisar a equipe no handoff (WhatsApp, Teams, e-mail).
