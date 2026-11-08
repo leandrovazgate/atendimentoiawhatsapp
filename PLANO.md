@@ -44,6 +44,20 @@ Fora do escopo da v1: resolução técnica automática (reset de senha, acesso r
 | Hospedagem | VPS/Container (Docker) com HTTPS público para o webhook | Railway, Render, Azure |
 | Segredos | Variáveis de ambiente (`.env`, nunca no git) | Key Vault |
 
+### Custo do LLM (API da Anthropic, não o plano Pro)
+
+O plano Pro é de uso pessoal, não fornece chave de API e não pode alimentar um bot automatizado; o agente usa a **API (cobrança por token, separada do Pro)**, com limite de gasto configurável no Console.
+
+Estimativa por atendimento (~10 trocas de mensagem, ~50 mil tokens de entrada somados e ~3 mil de saída), sem contar o desconto do cache de prompt:
+
+| Modelo | Preço por milhão de tokens (entrada/saída, US$) | ~por atendimento | ~500 atendimentos/mês |
+|---|---|---|---|
+| Claude Haiku 5.5 | 0,10 / 0,50 | US$ 0,007 | ~US$ 4 |
+| Claude Sonnet 5.5 | 2 / 10 | US$ 0,13 | ~US$ 65 |
+| Claude Opus 5.5 | 4 / 20 | US$ 0,26 | ~US$ 130 |
+
+Com cache de prompt (prompt de sistema e histórico reaproveitados), o custo do Sonnet tende a cair para cerca de metade. Proposta: homologar com **Haiku 5.5** e **Sonnet 5.5** nas mesmas conversas de teste e escolher pelo resultado.
+
 ## 3. Integração TomTicket (API v2.0)
 
 - Base: `https://api.tomticket.com/v2.0` ⚠️
