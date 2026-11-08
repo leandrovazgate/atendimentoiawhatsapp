@@ -1,6 +1,6 @@
 # Plano — Agente de Suporte de TI (Nível 1) via WhatsApp + TomTicket
 
-> Status: **planejamento** (nenhum código ainda). Itens marcados com ⚠️ precisam ser validados antes da implementação.
+> Status: **MVP (fase 1) implementado** — ver README.md para implantação. Itens marcados com ⚠️ ainda precisam ser validados.
 
 ## 1. Objetivo
 
@@ -83,26 +83,22 @@ Com cache de prompt (prompt de sistema e histórico reaproveitados), o custo do 
 
 ## 3. Integração TomTicket (API v2.0)
 
-- Base: `https://api.tomticket.com/v2.0` ⚠️
+- Base: `https://api.tomticket.com/v2.0`
 - Autenticação: `Authorization: Bearer <token>` — token criado em **Administração → Configurações da Conta → API → Novo Token**.
+- Requisições POST em `multipart/form-data`. Cliente identificado por e-mail com `customer_id_type=E`.
 
-Endpoints que vamos usar (nomes ⚠️ a confirmar na documentação da conta):
+Endpoints usados na v1 (confirmados com a implementação pública `glira/mcp-tomticket`; validar com o token real via `npm run tomticket:check`):
 
-| Função | Endpoint provável | Uso no agente |
+| Função | Endpoint | Uso no agente |
 |---|---|---|
-| Listar/buscar cliente | `GET /customer/list` (filtro por e-mail) | Identificar o solicitante |
-| Criar cliente | `POST /customer/new` | Quando o e-mail não existe |
-| Listar organizações | `GET /organization/list` | Mapear "empresa" → organização |
-| Listar departamentos | `GET /department/list` | Definir departamento padrão (ex.: Suporte) |
-| Listar categorias | `GET /department/category/list` | Classificar o chamado |
-| Abrir chamado | `POST /ticket/new` | `customer_id`, `department_id`, `category_id`, `priority`, `subject`, `message` |
-| Listar chamados | `GET /ticket/list` (filtro por cliente) | "Quais chamados eu tenho abertos?" |
-| Detalhe do chamado | `GET /ticket/detail` | Status e último andamento |
-| Responder chamado | `POST /ticket/reply` (v2) | Anexar complemento enviado pelo WhatsApp |
+| Buscar cliente | `GET customer/details?customer_id=<email>&customer_type_id=E` | Identificar o solicitante (não cadastra cliente) |
+| Listar departamentos | `GET department/list?show_nested_items=1` | Descobrir IDs de departamento e categoria |
+| Abrir chamado | `POST ticket/new` | `customer_id`, `customer_id_type`, `department_id`, `category_id`, `priority`, `subject`, `message` |
+| Listar chamados | `GET ticket/list` (`customer_id`, `customer_type_id=E`, `situation`, `min_protocol`/`max_protocol`) | Listar e localizar chamado por protocolo |
+| Detalhe do chamado | `GET ticket/detail?ticket_id=` | Situação e último andamento |
+| Complementar | `POST ticket/reply/customer` | Informação nova enviada pelo WhatsApp |
 
-**Prioridade**: o TomTicket usa níveis numéricos (ex.: 1 Baixa, 2 Normal, 3 Alta, 4 Urgente ⚠️). O agente sugere a prioridade com base em critérios objetivos (ver §5) e o cliente confirma.
-
-> Obs.: já existe no MSP Dashboard uma integração de leitura (`tomticket_list_open_tickets`). Podemos reaproveitar o mesmo token/conhecimento, mas o agente precisa de **escrita** (abrir chamado), então terá seu próprio cliente HTTP.
+**Prioridade**: 1 baixa, 2 normal, 3 alta, 4 urgente. **Situações em aberto**: 0, 1, 2, 3, 6–11 (4 = cancelado, 5 = finalizado).
 
 ## 4. Fluxo de conversa
 
@@ -204,13 +200,17 @@ Dockerfile
 | **3. Mídia** | Imagens e áudio | Prints anexados ao chamado |
 | **4. Expansão** | Base de conhecimento (FAQ/procedimentos) para resolver dúvidas simples; outros canais (Teams, e-mail, site) | — |
 
-## 11. O que preciso de você para começar
+## 11. Decisões e pendências
 
-1. **Token da API TomTicket** (e o link da documentação da sua conta) — para validar os endpoints.
-2. **Provedor de WhatsApp**: Cloud API oficial da Meta (recomendado) ou Z-API/Evolution?
-3. ~~Números de WhatsApp~~ — **definido:** 1 número de suporte geral na v1 (multi-número fica pronto na arquitetura).
-4. **Política de cadastro**: o agente pode cadastrar cliente novo no TomTicket ou só atender quem já existe?
-5. **Departamento/categorias** padrão para os chamados abertos pelo agente.
-6. **Horário de atendimento**, SLA por prioridade e como avisar a equipe no handoff (WhatsApp, Teams, e-mail).
-7. **Hospedagem**: onde o serviço vai rodar (VPS própria, Azure, etc.).
-8. Nome/persona do agente (ex.: "Gate").
+Definido:
+- **Provedor**: WhatsApp Cloud API oficial da Meta.
+- **Número**: 1 número — o **número atual do suporte** (via coexistência com o app WhatsApp Business, se elegível; ver README).
+- **Cadastro**: atender **somente clientes já cadastrados** no TomTicket; o agente nunca cadastra.
+- **Modelo**: configurável em `LLM_MODEL`; comparar Opus 5.5 / Sonnet 5.5 / Haiku 5.5 na homologação.
+
+Pendente (pode vir durante a homologação):
+1. **Token da API TomTicket** e o **departamento/categoria** padrão (`npm run tomticket:check`).
+2. **SLA por prioridade** e **horário de atendimento** (`SLA_TEXT`, `BUSINESS_HOURS`).
+3. **Canal de aviso à equipe** no handoff (Teams, Slack, n8n… via `HANDOFF_WEBHOOK_URL`).
+4. **Hospedagem** com HTTPS público.
+5. Nome/persona do agente (padrão "Gate").

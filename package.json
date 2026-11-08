@@ -1,0 +1,27 @@
+{
+  "name": "atendimento-ia-whatsapp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agente de suporte de TI (nível 1) no WhatsApp integrado ao TomTicket",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node --disable-warning=ExperimentalWarning dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.check.json",
+    "test": "tsx --test tests/*.test.ts",
+    "tomticket:check": "tsx scripts/tomticket-check.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "fastify": "^5.12.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
