@@ -60,7 +60,7 @@ Com cache de prompt (prompt de sistema e histórico reaproveitados), o custo do 
 
 ### Múltiplos números de WhatsApp
 
-O agente atende **vários números ao mesmo tempo**, com uma única instalação do serviço.
+**Decisão:** a v1 entra em produção com **1 número (suporte geral)**. A arquitetura já nasce preparada para vários números, com uma única instalação do serviço; adicionar outro depois é só configuração.
 
 - **Identificação do número:** cada mensagem recebida da Cloud API traz `metadata.phone_number_id`, que diz qual número recebeu a mensagem. A resposta sai sempre pelo **mesmo número**.
 - **Cadastro de canais:** uma tabela `channels` guarda a configuração de cada número:
@@ -208,7 +208,7 @@ Dockerfile
 
 1. **Token da API TomTicket** (e o link da documentação da sua conta) — para validar os endpoints.
 2. **Provedor de WhatsApp**: Cloud API oficial da Meta (recomendado) ou Z-API/Evolution?
-3. **Números de WhatsApp**: quantos, e para que serve cada um (por cliente, por marca, por setor?).
+3. ~~Números de WhatsApp~~ — **definido:** 1 número de suporte geral na v1 (multi-número fica pronto na arquitetura).
 4. **Política de cadastro**: o agente pode cadastrar cliente novo no TomTicket ou só atender quem já existe?
 5. **Departamento/categorias** padrão para os chamados abertos pelo agente.
 6. **Horário de atendimento**, SLA por prioridade e como avisar a equipe no handoff (WhatsApp, Teams, e-mail).
